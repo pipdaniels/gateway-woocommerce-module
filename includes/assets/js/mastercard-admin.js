@@ -1,5 +1,8 @@
+// Modified for Visa/Mastercard dual credentials
+				
 /*
- * Copyright (c) 2019-2022 Mastercard
+ * Copyright (c) 2019-2023 Mastercard
+ * Modified for Visa/Mastercard dual credentials
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,60 +21,98 @@ jQuery(function ($) {
     'use strict';
     var wc_mastercard_admin = {
         init: function () {
-            var sandbox_username = $('#woocommerce_mpgs_gateway_sandbox_username').parents('tr').eq(0),
-                sandbox_password = $('#woocommerce_mpgs_gateway_sandbox_password').parents('tr').eq(0),
-                username = $('#woocommerce_mpgs_gateway_username').parents('tr').eq(0),
-                password = $('#woocommerce_mpgs_gateway_password').parents('tr').eq(0),
-                threedsecure = $('#woocommerce_mpgs_gateway_threedsecure').parents('tr').eq(0),
-                gateway_url = $('#woocommerce_mpgs_gateway_custom_gateway_url').parents('tr').eq(0),
-                hc_interaction = $('#woocommerce_mpgs_gateway_hc_interaction').parents('tr').eq(0),
-                hc_type = $('#woocommerce_mpgs_gateway_hc_type').parents('tr').eq(0),
-                saved_cards = $('#woocommerce_mpgs_gateway_saved_cards').parents('tr').eq(0);
+            // --- Get all relevant fields using their NEW IDs ---
+            // Sandbox Toggle
+            var sandbox_toggle = $('#woocommerce_mpgs_gateway_sandbox');
 
-            $('#woocommerce_mpgs_gateway_sandbox').on('change', function () {
-                if ($(this).is(':checked')) {
-                    sandbox_username.show();
-                    sandbox_password.show();
-                    username.hide();
-                    password.hide();
+            // Mastercard Fields
+            var live_mc_username = $('#woocommerce_mpgs_gateway_username_mastercard').closest('tr'),
+                live_mc_password = $('#woocommerce_mpgs_gateway_password_mastercard').closest('tr'),
+                sandbox_mc_username = $('#woocommerce_mpgs_gateway_sandbox_username_mastercard').closest('tr'),
+                sandbox_mc_password = $('#woocommerce_mpgs_gateway_sandbox_password_mastercard').closest('tr');
+
+            // Visa Fields
+            var live_visa_username = $('#woocommerce_mpgs_gateway_username_visa').closest('tr'),
+                live_visa_password = $('#woocommerce_mpgs_gateway_password_visa').closest('tr'),
+                sandbox_visa_username = $('#woocommerce_mpgs_gateway_sandbox_username_visa').closest('tr'),
+                sandbox_visa_password = $('#woocommerce_mpgs_gateway_sandbox_password_visa').closest('tr');
+
+            // Integration Method Fields
+            var method_select = $('#woocommerce_mpgs_gateway_method'),
+                threedsecure = $('#woocommerce_mpgs_gateway_threedsecure').closest('tr'),
+                hc_interaction = $('#woocommerce_mpgs_gateway_hc_interaction').closest('tr'),
+                saved_cards = $('#woocommerce_mpgs_gateway_saved_cards').closest('tr');
+                // hc_type (legacy) is removed from PHP, so no JS needed for it
+
+            // Gateway URL Fields
+            var gateway_url_select = $('#woocommerce_mpgs_gateway_gateway_url'),
+                custom_gateway_url = $('#woocommerce_mpgs_gateway_custom_gateway_url').closest('tr');
+
+
+            // --- Function to handle Sandbox Toggle ---
+            function toggleSandboxFields() {
+                 if (sandbox_toggle.is(':checked')) {
+                    // Show Sandbox, Hide Live
+                    sandbox_mc_username.show();
+                    sandbox_mc_password.show();
+                    sandbox_visa_username.show();
+                    sandbox_visa_password.show();
+                    live_mc_username.hide();
+                    live_mc_password.hide();
+                    live_visa_username.hide();
+                    live_visa_password.hide();
                 } else {
-                    sandbox_username.hide();
-                    sandbox_password.hide();
-                    username.show();
-                    password.show();
+                    // Show Live, Hide Sandbox
+                    sandbox_mc_username.hide();
+                    sandbox_mc_password.hide();
+                    sandbox_visa_username.hide();
+                    sandbox_visa_password.hide();
+                    live_mc_username.show();
+                    live_mc_password.show();
+                    live_visa_username.show();
+                    live_visa_password.show();
                 }
-            }).change();
+            }
 
-            $('#woocommerce_mpgs_gateway_method').on('change', function () {
-                if ($(this).val() === 'newhostedcheckout') {
-                    // Hosted Checkout
+            // --- Function to handle Integration Method Toggle ---
+            function toggleMethodFields() {
+                var selectedMethod = method_select.val();
+                if (selectedMethod === 'newhostedcheckout') {
+                    // New Hosted Checkout
                     threedsecure.hide();
-                    hc_interaction.show();
-                    hc_type.hide();
+                    hc_interaction.show(); // Show HC Interaction (Embedded/Redirect)
                     saved_cards.hide();
-                } else if ($(this).val() === 'hostedcheckout') {
-                    // Legacy Hosted Checkout
-                    // @todo Remove after removal of Legacy Hosted Checkout
+                } else if (selectedMethod === 'hostedsession') {
+                     // Hosted Session
+                    threedsecure.show(); // Show 3DS setting
+                    hc_interaction.hide();
+                    saved_cards.show(); // Show Saved Cards setting
+                } else {
+                    // Default or unknown - hide method-specific fields
                     threedsecure.hide();
                     hc_interaction.hide();
-                    hc_type.show();
                     saved_cards.hide();
-                } else {
-                    // Hosted Session
-                    threedsecure.show();
-                    hc_interaction.hide();
-                    hc_type.hide();
-                    saved_cards.show();
                 }
-            }).change();
+            }
 
-            $('#woocommerce_mpgs_gateway_gateway_url').on('change', function () {
-                if ($(this).val() === 'custom') {
-                    gateway_url.show();
+            // --- Function to handle Gateway URL Toggle ---
+             function toggleGatewayUrlField() {
+                  if (gateway_url_select.val() === 'custom') {
+                    custom_gateway_url.show();
                 } else {
-                    gateway_url.hide();
+                    custom_gateway_url.hide();
                 }
-            }).change();
+             }
+
+            // --- Initial setup on page load ---
+            toggleSandboxFields();
+            toggleMethodFields();
+            toggleGatewayUrlField();
+
+            // --- Event Handlers ---
+            sandbox_toggle.on('change', toggleSandboxFields);
+            method_select.on('change', toggleMethodFields);
+            gateway_url_select.on('change', toggleGatewayUrlField);
         }
     };
     wc_mastercard_admin.init();
